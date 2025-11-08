@@ -139,3 +139,40 @@ export const getFileById = async (req: Request, res: Response) => {
         res.status(500).json({ message: "Server error." });
     }
 };
+
+export const deleteFile = async (req: Request, res: Response) => {
+    try {
+        // 1. Validate the file ID
+        if (!mongoose.Types.ObjectId.isValid(req.params.fileId)) {
+            return res.status(400).json({ message: 'Invalid file ID format.' });
+        }
+
+        // 2. Find the file metadata to get the gridFsId
+        const file = await File.findById(req.params.fileId);
+        if (!file) {
+            return res.status(404).json({ message: 'File metadata not found.' });
+        }
+
+        // 3. Delete the actual file from GridFS
+        // We use the gridFsId we stored in our File model
+        await gfs.delete(new mongoose.Types.ObjectId(file.gridFsId));
+
+        // 4. Delete the metadata document from our 'File' collection
+        await File.findByIdAndDelete(req.params.fileId);
+
+        res.status(200).json({
+            message: 'File deleted successfully.',
+            fileId: req.params.fileId
+        });
+
+    } catch (error: any) {
+        // Handle case where file might not exist in GridFS but exists in metadata
+        if (error.message && error.message.includes('Tnvalid File Not Found')) {
+             // If GridFS delete fails because it's already gone, just delete metadata
+             await File.findByIdAndDelete(req.params.fileId);
+             return res.status(200).json({ message: 'File metadata deleted (actual file was already missing).' });
+        }
+        console.error("Error deleting file:", error);
+        res.status(500).json({ message: "Server error while deleting file." });
+    }
+};

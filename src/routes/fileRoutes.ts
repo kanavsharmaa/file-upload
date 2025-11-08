@@ -5,6 +5,7 @@ import {
   uploadMultipleFiles,
   getAllFiles,
   getFileById,
+  deleteFile,
 } from "../controllers/fileController";
 
 import { isAdmin, isUser } from "../middlewares/auth";
@@ -22,5 +23,7 @@ router.post(
   upload.array("pdfFiles", 10),
   uploadMultipleFiles
 );
+
+router.delete("/:fileId", isAdmin, deleteFile);
 
 export default router;
