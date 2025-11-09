@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import type { Role } from '@/types';
 import styles from './VisibilitySelector.module.css';
 
@@ -18,9 +18,9 @@ export const VisibilitySelector = ({ onVisibilityChange, currentUser }: Visibili
     setIsPrivate(true);
     setSelectedUsers([]);
     onVisibilityChange(true, []);
-  }, [currentUser]);
+  }, [currentUser, onVisibilityChange]);
 
-  const handlePrivateChange = (value: boolean) => {
+  const handlePrivateChange = useCallback((value: boolean) => {
     setIsPrivate(value);
     if (value) {
       setSelectedUsers([]);
@@ -28,27 +28,27 @@ export const VisibilitySelector = ({ onVisibilityChange, currentUser }: Visibili
     } else {
       onVisibilityChange(false, selectedUsers);
     }
-  };
+  }, [selectedUsers, onVisibilityChange]);
 
-  const handleUserToggle = (user: Role) => {
+  const handleUserToggle = useCallback((user: Role) => {
     const newSelection = selectedUsers.includes(user)
       ? selectedUsers.filter((u) => u !== user)
       : [...selectedUsers, user];
     
     setSelectedUsers(newSelection);
     onVisibilityChange(isPrivate, newSelection);
-  };
+  }, [selectedUsers, isPrivate, onVisibilityChange]);
 
-  const handleSelectAll = () => {
+  const handleSelectAll = useCallback(() => {
     const allUsers = ALL_USERS.filter((u) => u !== currentUser);
     setSelectedUsers(allUsers);
     onVisibilityChange(false, allUsers);
-  };
+  }, [currentUser, onVisibilityChange]);
 
-  const handleSelectNone = () => {
+  const handleSelectNone = useCallback(() => {
     setSelectedUsers([]);
     onVisibilityChange(false, []);
-  };
+  }, [onVisibilityChange]);
 
   return (
     <div className={styles.container}>

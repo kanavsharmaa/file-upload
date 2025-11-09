@@ -8,9 +8,6 @@ interface AnnotationToolbarProps {
   currentColor: string;
   onColorChange: (color: string) => void;
   canAnnotate: boolean;
-  onSave?: () => void;
-  onCancel?: () => void;
-  showSaveCancel?: boolean;
 }
 
 const COLORS = [
@@ -28,9 +25,6 @@ export const AnnotationToolbar = ({
   currentColor,
   onColorChange,
   canAnnotate,
-  onSave,
-  onCancel,
-  showSaveCancel = false,
 }: AnnotationToolbarProps) => {
   const [showColorPicker, setShowColorPicker] = useState(false);
 
@@ -107,17 +101,6 @@ export const AnnotationToolbar = ({
           </div>
         )}
       </div>
-
-      {showSaveCancel && (
-        <div className={styles.actionGroup}>
-          <button className={styles.saveButton} onClick={onSave}>
-            Save
-          </button>
-          <button className={styles.cancelButton} onClick={onCancel}>
-            Cancel
-          </button>
-        </div>
-      )}
     </div>
   );
 };

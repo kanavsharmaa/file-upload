@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import { Document, Page, pdfjs } from 'react-pdf';
 import clsx from 'clsx';
@@ -75,12 +75,6 @@ export const PdfViewerPage = () => {
     };
   }, [fileId, currentUser]);
 
-  // Reset visibility to private when user changes
-  useEffect(() => {
-    setIsPrivate(true);
-    setVisibility([]);
-  }, [currentUser]);
-
   // Fetch annotations
   useEffect(() => {
     if (!fileId) return;
@@ -107,21 +101,12 @@ export const PdfViewerPage = () => {
     setPageHeight(page.height);
   };
 
-  const changePage = (offset: number): void => {
-    setPageNumber((prevPageNumber) => prevPageNumber + offset);
-  };
+  const canAnnotate = useMemo(
+    () => currentUser === 'A1' || currentUser === 'D1' || currentUser === 'D2',
+    [currentUser]
+  );
 
-  const previousPage = (): void => {
-    changePage(-1);
-  };
-
-  const nextPage = (): void => {
-    changePage(1);
-  };
-
-  const canAnnotate = currentUser === 'A1' || currentUser === 'D1' || currentUser === 'D2';
-
-  const handleAnnotationCreate = async (annotation: Partial<Annotation>) => {
+  const handleAnnotationCreate = useCallback(async (annotation: Partial<Annotation>) => {
     if (!fileId || !annotation.type || !annotation.data) return;
 
     // Create optimistic annotation with temporary ID
@@ -171,9 +156,9 @@ export const PdfViewerPage = () => {
       const errorMessage = err instanceof Error ? err.message : 'Failed to create annotation. Please try again.';
       alert(errorMessage);
     }
-  };
+  }, [fileId, currentUser, isPrivate, visibility]);
 
-  const handleAnnotationDelete = async (annotationId: string) => {
+  const handleAnnotationDelete = useCallback(async (annotationId: string) => {
     // Store the annotation in case we need to restore it
     const annotationToDelete = annotations.find((ann) => ann._id === annotationId);
     if (!annotationToDelete) return;
@@ -193,12 +178,12 @@ export const PdfViewerPage = () => {
       const errorMessage = err instanceof Error ? err.message : 'Failed to delete annotation. Please try again.';
       alert(errorMessage);
     }
-  };
+  }, [annotations, currentUser]);
 
-  const handleVisibilityChange = (newIsPrivate: boolean, newVisibility: Role[]) => {
+  const handleVisibilityChange = useCallback((newIsPrivate: boolean, newVisibility: Role[]) => {
     setIsPrivate(newIsPrivate);
     setVisibility(newVisibility);
-  };
+  }, []);
 
   if (error) {
     return <div className={styles.error}>Error loading PDF: {error}</div>;
@@ -220,7 +205,7 @@ export const PdfViewerPage = () => {
 
       <div className={styles.controls}>
         <button
-          onClick={previousPage}
+          onClick={() => setPageNumber((prev) => prev - 1)}
           disabled={pageNumber <= 1}
           className={styles.button}
         >
@@ -230,7 +215,7 @@ export const PdfViewerPage = () => {
           Page {pageNumber} of {numPages}
         </span>
         <button
-          onClick={nextPage}
+          onClick={() => setPageNumber((prev) => prev + 1)}
           disabled={pageNumber >= numPages}
           className={styles.button}
         >
