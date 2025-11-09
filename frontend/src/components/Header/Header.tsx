@@ -1,37 +1,44 @@
 import { Link } from 'react-router-dom';
 import { useUserContext, ROLES } from '@contexts/UserContext';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { FileText, User } from 'lucide-react';
 import type { Role } from '@/types';
-import styles from './Header.module.css';
 
 export const Header = () => {
   const { currentUser, setCurrentUser } = useUserContext();
 
-  const handleUserChange = (event: React.ChangeEvent<HTMLSelectElement>): void => {
-    setCurrentUser(event.target.value as Role);
+  const handleUserChange = (value: string): void => {
+    setCurrentUser(value as Role);
   };
 
   return (
-    <header className={styles.header}>
-      <Link to="/" className={styles.titleLink}>
-        <h1 className={styles.title}>FloSmart PDF Annotator</h1>
-      </Link>
+    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <div className="container flex h-16 items-center justify-between px-4">
+        <Link to="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+          <FileText className="h-6 w-6 text-primary" />
+          <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+            FloSmart PDF Annotator
+          </h1>
+        </Link>
 
-      <div className={styles.userSwitcher}>
-        <label htmlFor="user-select" className={styles.label}>
-          Current User:
-        </label>
-        <select
-          id="user-select"
-          value={currentUser}
-          onChange={handleUserChange}
-          className={styles.select}
-        >
-          {ROLES.map((role) => (
-            <option key={role} value={role}>
-              {role}
-            </option>
-          ))}
-        </select>
+        <div className="flex items-center gap-3">
+          <label htmlFor="user-select" className="text-sm font-medium flex items-center gap-2">
+            <User className="h-4 w-4" />
+            Current User:
+          </label>
+          <Select value={currentUser} onValueChange={handleUserChange}>
+            <SelectTrigger className="w-[120px]" id="user-select">
+              <SelectValue placeholder="Select user" />
+            </SelectTrigger>
+            <SelectContent>
+              {ROLES.map((role) => (
+                <SelectItem key={role} value={role}>
+                  {role}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
     </header>
   );

@@ -1,4 +1,5 @@
 import { useRef, useState, useEffect, useCallback } from 'react';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import type { 
   Annotation, 
   AnnotationType, 
@@ -16,6 +17,7 @@ interface AnnotationLayerProps {
   currentColor: string;
   currentUser: Role;
   onAnnotationCreate: (annotation: Partial<Annotation>) => void;
+  onAnnotationUpdate: (annotationId: string, updates: Partial<Annotation>) => void;
   onAnnotationDelete: (annotationId: string) => void;
   canAnnotate: boolean;
   scale?: number;
@@ -30,6 +32,7 @@ export const AnnotationLayer = ({
   currentColor,
   currentUser,
   onAnnotationCreate,
+  onAnnotationUpdate,
   onAnnotationDelete,
   canAnnotate,
   scale = 1,
@@ -42,6 +45,8 @@ export const AnnotationLayer = ({
   const [drawPath, setDrawPath] = useState<Array<{ x: number; y: number }>>([]);
   const [commentPosition, setCommentPosition] = useState<{ x: number; y: number } | null>(null);
   const [commentText, setCommentText] = useState('');
+  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
+  const [editingCommentText, setEditingCommentText] = useState('');
   const [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 });
 
   // Filter annotations for current page
@@ -326,6 +331,39 @@ export const AnnotationLayer = ({
     return currentUser === 'A1' || annotation.createdBy === currentUser;
   };
 
+  const canEdit = (annotation: Annotation) => {
+    // Admin can edit all comments, owner can edit their own
+    return currentUser === 'A1' || annotation.createdBy === currentUser;
+  };
+
+  const handleEditComment = (annotation: Annotation) => {
+    const data = annotation.data as CommentData;
+    setEditingCommentId(annotation._id);
+    setEditingCommentText(data.text);
+  };
+
+  const handleSaveEdit = (annotation: Annotation) => {
+    if (!editingCommentText.trim()) return;
+
+    const data = annotation.data as CommentData;
+    const updatedData: CommentData = {
+      ...data,
+      text: editingCommentText,
+    };
+
+    onAnnotationUpdate(annotation._id, {
+      data: updatedData,
+    });
+
+    setEditingCommentId(null);
+    setEditingCommentText('');
+  };
+
+  const handleCancelEdit = () => {
+    setEditingCommentId(null);
+    setEditingCommentText('');
+  };
+
   return (
     <div 
       ref={containerRef}
@@ -352,35 +390,153 @@ export const AnnotationLayer = ({
         }}
       />
 
+      {/* Render invisible overlays for highlights with tooltips */}
+      {pageAnnotations
+        .filter((ann) => ann.type === 'Highlight')
+        .map((annotation) => {
+          const data = annotation.data as HighlightData;
+          return data.rects.map((rect, idx) => (
+            <Tooltip key={`${annotation._id}-${idx}`}>
+              <TooltipTrigger asChild>
+                <div
+                  style={{
+                    position: 'absolute',
+                    left: `${rect.x}px`,
+                    top: `${rect.y}px`,
+                    width: `${rect.width}px`,
+                    height: `${rect.height}px`,
+                    pointerEvents: currentTool === 'Eraser' ? 'none' : 'auto',
+                    cursor: 'default',
+                  }}
+                />
+              </TooltipTrigger>
+              <TooltipContent>
+                <div className="space-y-1">
+                  <div className="font-semibold text-xs">Created by: {annotation.createdBy}</div>
+                  <div className="text-sm italic">"{data.text}"</div>
+                </div>
+              </TooltipContent>
+            </Tooltip>
+          ));
+        })}
+
+      {/* Render invisible overlays for drawings with tooltips */}
+      {pageAnnotations
+        .filter((ann) => ann.type === 'Draw')
+        .map((annotation) => {
+          const data = annotation.data as DrawData;
+          // Calculate bounding box for the drawing
+          const allPoints = data.paths.flatMap(p => p.points);
+          if (allPoints.length === 0) return null;
+          
+          const minX = Math.min(...allPoints.map(p => p.x));
+          const maxX = Math.max(...allPoints.map(p => p.x));
+          const minY = Math.min(...allPoints.map(p => p.y));
+          const maxY = Math.max(...allPoints.map(p => p.y));
+          
+          return (
+            <Tooltip key={annotation._id}>
+              <TooltipTrigger asChild>
+                <div
+                  style={{
+                    position: 'absolute',
+                    left: `${minX - 10}px`,
+                    top: `${minY - 10}px`,
+                    width: `${maxX - minX + 20}px`,
+                    height: `${maxY - minY + 20}px`,
+                    pointerEvents: currentTool === 'Eraser' ? 'none' : 'auto',
+                    cursor: 'default',
+                  }}
+                />
+              </TooltipTrigger>
+              <TooltipContent>
+                <div className="font-semibold text-xs">Created by: {annotation.createdBy}</div>
+              </TooltipContent>
+            </Tooltip>
+          );
+        })}
+
       {/* Render comment markers */}
       {pageAnnotations
         .filter((ann) => ann.type === 'Comment')
         .map((annotation) => {
           const data = annotation.data as CommentData;
+          const isEditing = editingCommentId === annotation._id;
+          
           return (
-            <div
-              key={annotation._id}
-              className={styles.commentMarker}
-              style={{
-                left: `${data.x}px`,
-                top: `${data.y}px`,
-                backgroundColor: data.color,
-              }}
-              title={data.text}
-            >
-              💬
-              {canDelete(annotation) && (
-                <button
-                  className={styles.deleteButton}
-                  onClick={() => onAnnotationDelete(annotation._id)}
+            <div key={annotation._id}>
+              {isEditing ? (
+                <div
+                  className={styles.commentDialog}
+                  style={{
+                    left: `${data.x}px`,
+                    top: `${data.y}px`,
+                  }}
                 >
-                  ×
-                </button>
+                  <textarea
+                    className={styles.commentInput}
+                    value={editingCommentText}
+                    onChange={(e) => setEditingCommentText(e.target.value)}
+                    placeholder="Edit your comment..."
+                    autoFocus
+                  />
+                  <div className={styles.commentActions}>
+                    <button className={styles.submitButton} onClick={() => handleSaveEdit(annotation)}>
+                      Save
+                    </button>
+                    <button className={styles.cancelButton} onClick={handleCancelEdit}>
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div
+                      className={styles.commentMarker}
+                      style={{
+                        left: `${data.x}px`,
+                        top: `${data.y}px`,
+                        backgroundColor: data.color,
+                      }}
+                    >
+                      💬
+                      <div className={styles.commentActions}>
+                        {canEdit(annotation) && (
+                          <button
+                            className={styles.editButton}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEditComment(annotation);
+                            }}
+                            title="Edit comment"
+                          >
+                            ✏️
+                          </button>
+                        )}
+                        {canDelete(annotation) && (
+                          <button
+                            className={styles.deleteButton}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onAnnotationDelete(annotation._id);
+                            }}
+                            title="Delete comment"
+                          >
+                            ×
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <div className="space-y-1">
+                      <div className="font-semibold text-xs">Created by: {annotation.createdBy}</div>
+                      <div className="text-sm">{data.text}</div>
+                    </div>
+                  </TooltipContent>
+                </Tooltip>
               )}
-              <div className={styles.commentTooltip}>
-                <div className={styles.commentAuthor}>By: {annotation.createdBy}</div>
-                <div className={styles.commentText}>{data.text}</div>
-              </div>
             </div>
           );
         })}

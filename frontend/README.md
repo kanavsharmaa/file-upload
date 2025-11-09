@@ -25,8 +25,8 @@ npm run type-check
 
 - 📄 **PDF Upload & Management** - Upload, view, and delete PDF files
 - 👥 **Role-Based Access** - Four user roles (A1, D1, D2, R1) with different permissions
-- 📱 **Modern UI** - Clean, responsive design with CSS Modules
-- 🎨 **Design System** - CSS variables for consistent theming
+- 📱 **Modern UI** - Clean, responsive design with Tailwind CSS and shadcn/ui
+- 🎨 **Design System** - Modern component library with consistent theming
 - ⚡ **Optimized Build** - Code splitting and lazy loading
 - 🛡️ **Type Safe** - Full TypeScript strict mode
 - 🔍 **Error Handling** - Error boundaries and custom error classes
@@ -38,7 +38,8 @@ npm run type-check
 - **Vite 5.4.8** - Fast build tool and dev server
 - **React Router 6.26.2** - Client-side routing
 - **react-pdf 9.1.1** - PDF viewing with navigation
-- **CSS Modules** - Scoped component styling
+- **Tailwind CSS** - Utility-first CSS framework
+- **shadcn/ui** - High-quality React components
 
 ## 📁 Project Structure
 
@@ -55,8 +56,7 @@ src/
 │   ├── Dashboard/       # Main dashboard
 │   └── PdfViewer/       # PDF viewer page
 ├── styles/              # Global styles
-│   ├── globals.css      # Global CSS reset
-│   └── variables.css    # CSS custom properties
+│   └── globals.css      # Global CSS with Tailwind and CSS variables
 ├── types/               # TypeScript types
 │   ├── index.ts         # Shared types
 │   └── css.d.ts         # CSS module types
@@ -66,24 +66,24 @@ src/
 └── main.tsx             # Entry point
 ```
 
-## 🎨 CSS Architecture
+## 🎨 Styling Architecture
 
-This project uses **CSS Modules** for component-scoped styling and **CSS Variables** for theming:
+This project uses a hybrid approach:
+- **Tailwind CSS** - Utility-first styling for modern components
+- **shadcn/ui** - Pre-built, accessible React components
+- **CSS Modules** - Legacy component styling (being phased out)
 
+New components use Tailwind and shadcn/ui:
 ```typescript
-// Component with CSS Module
-import styles from './Component.module.css';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 
-<div className={styles.container}>
-  <button className={styles.button}>Click me</button>
-</div>
+<Card className="p-4">
+  <Button variant="primary">Click me</Button>
+</Card>
 ```
 
-Design tokens are defined in `src/styles/variables.css`:
-- Colors (primary, danger, success, neutrals)
-- Spacing scale (xs to 2xl)
-- Typography system
-- Shadows and transitions
+Design tokens are defined in `src/styles/globals.css` using CSS variables for both Tailwind and legacy components.
 
 ## 🔧 Configuration
 
@@ -103,12 +103,12 @@ import { useUserContext } from '@contexts/UserContext';
 import type { Role } from '@/types';
 ```
 
-## 📚 Documentation
+## 📚 Key Features
 
-- **[MIGRATION_SUMMARY.md](./MIGRATION_SUMMARY.md)** - Complete modernization summary
-- **[MODERNIZATION.md](./MODERNIZATION.md)** - Detailed modernization guide
-- **[BEFORE_AFTER.md](./BEFORE_AFTER.md)** - Visual comparison of changes
-- **[CHECKLIST.md](./CHECKLIST.md)** - Post-modernization checklist
+- **PDF Annotations** - Highlight, comment, and draw on PDFs
+- **Visibility Control** - Private or shared annotations with role-based access
+- **Toast Notifications** - User-friendly feedback system
+- **Responsive Design** - Works seamlessly on all devices
 
 ## 🧪 Testing
 
@@ -154,8 +154,9 @@ dist
 ### Code Style
 - TypeScript strict mode enabled
 - ESLint for code quality
-- CSS Modules for scoped styles
+- Tailwind CSS for styling
 - Functional components with hooks
+- shadcn/ui for UI components
 
 ### Performance
 - Code splitting (react-vendor, pdf-vendor)

@@ -5,6 +5,8 @@ import { ErrorBoundary } from '@components/ErrorBoundary';
 import { Header } from '@components/Header';
 import { DashboardPage } from '@pages/Dashboard';
 import { PdfViewerPage } from '@pages/PdfViewer';
+import { Toaster } from '@/components/ui/toaster';
+import { TooltipProvider } from '@/components/ui/tooltip';
 import type { Role } from '@/types';
 
 function App() {
@@ -20,17 +22,20 @@ function App() {
 
   return (
     <ErrorBoundary>
-      <UserContext.Provider value={contextValue}>
-        <BrowserRouter>
-          <Header />
-          <main>
-            <Routes>
-              <Route path="/" element={<DashboardPage />} />
-              <Route path="/files/:fileId" element={<PdfViewerPage />} />
-            </Routes>
-          </main>
-        </BrowserRouter>
-      </UserContext.Provider>
+      <TooltipProvider>
+        <UserContext.Provider value={contextValue}>
+          <BrowserRouter>
+            <Header />
+            <main>
+              <Routes>
+                <Route path="/" element={<DashboardPage />} />
+                <Route path="/files/:fileId" element={<PdfViewerPage />} />
+              </Routes>
+            </main>
+          </BrowserRouter>
+          <Toaster />
+        </UserContext.Provider>
+      </TooltipProvider>
     </ErrorBoundary>
   );
 }

@@ -7,6 +7,10 @@ import { AnnotationToolbar } from '@/components/AnnotationToolbar';
 import { AnnotationLayer } from '@/components/AnnotationLayer';
 import { VisibilitySelector } from '@/components/VisibilitySelector';
 import { annotationApi } from '@utils/annotationApi';
+import { useToast } from '@/components/ui/use-toast';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { ChevronLeft, ChevronRight, Settings } from 'lucide-react';
 import type { Annotation, AnnotationType, Role } from '@/types';
 import styles from './PdfViewerPage.module.css';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
@@ -21,6 +25,7 @@ pdfjs.GlobalWorkerOptions.workerSrc = new URL(
 export const PdfViewerPage = () => {
   const { fileId } = useParams<{ fileId: string }>();
   const { currentUser } = useUserContext();
+  const { toast } = useToast();
 
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -38,12 +43,20 @@ export const PdfViewerPage = () => {
   useEffect(() => {
     if (!fileId) return;
 
+    // Clear previous PDF and annotations immediately when fileId changes
+    setPdfUrl(null);
+    setAnnotations([]);
+    setError(null);
+    setNumPages(0);
+    setPageNumber(1);
+
     let objectUrl: string | null = null;
 
     const fetchPdf = async () => {
       try {
+        const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
         const response = await fetch(
-          `http://localhost:4000/api/files/${fileId}`,
+          `${API_BASE_URL}/files/${fileId}`,
           {
             headers: {
               'X-User-Role': currentUser,
@@ -75,9 +88,9 @@ export const PdfViewerPage = () => {
     };
   }, [fileId, currentUser]);
 
-  // Fetch annotations
+  // Fetch annotations (only after PDF is loaded)
   useEffect(() => {
-    if (!fileId) return;
+    if (!fileId || !pdfUrl) return;
 
     const fetchAnnotations = async () => {
       try {
@@ -85,11 +98,12 @@ export const PdfViewerPage = () => {
         setAnnotations(data);
       } catch (err) {
         console.error('Failed to fetch annotations:', err);
+        setAnnotations([]);
       }
     };
 
     fetchAnnotations();
-  }, [fileId, currentUser]);
+  }, [fileId, currentUser, pdfUrl]);
 
   const onDocumentLoadSuccess = ({ numPages }: { numPages: number }): void => {
     setNumPages(numPages);
@@ -123,7 +137,6 @@ export const PdfViewerPage = () => {
 
     // Add to UI immediately (optimistic update)
     setAnnotations((prev) => [...prev, optimisticAnnotation]);
-    setCurrentTool(null);
 
     try {
       // Make API call
@@ -154,9 +167,60 @@ export const PdfViewerPage = () => {
       
       // Show error to user
       const errorMessage = err instanceof Error ? err.message : 'Failed to create annotation. Please try again.';
-      alert(errorMessage);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: errorMessage,
+      });
     }
   }, [fileId, currentUser, isPrivate, visibility]);
+
+  const handleAnnotationUpdate = useCallback(async (annotationId: string, updates: Partial<Annotation>) => {
+    // Store the original annotation in case we need to restore it
+    const originalAnnotation = annotations.find((ann) => ann._id === annotationId);
+    if (!originalAnnotation) return;
+
+    // Update UI immediately (optimistic update)
+    setAnnotations((prev) =>
+      prev.map((ann) =>
+        ann._id === annotationId ? { ...ann, ...updates } : ann
+      )
+    );
+
+    try {
+      const updatedAnnotation = await annotationApi.update(annotationId, updates, currentUser);
+      
+      // Replace with server response
+      setAnnotations((prev) =>
+        prev.map((ann) =>
+          ann._id === annotationId ? updatedAnnotation : ann
+        )
+      );
+
+      toast({
+        variant: 'success',
+        title: 'Success',
+        description: 'Comment updated successfully',
+      });
+    } catch (err) {
+      console.error('Failed to update annotation:', err);
+      
+      // Restore original annotation on failure
+      setAnnotations((prev) =>
+        prev.map((ann) =>
+          ann._id === annotationId ? originalAnnotation : ann
+        )
+      );
+      
+      // Show error to user
+      const errorMessage = err instanceof Error ? err.message : 'Failed to update annotation. Please try again.';
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: errorMessage,
+      });
+    }
+  }, [annotations, currentUser, toast]);
 
   const handleAnnotationDelete = useCallback(async (annotationId: string) => {
     // Store the annotation in case we need to restore it
@@ -168,6 +232,12 @@ export const PdfViewerPage = () => {
 
     try {
       await annotationApi.delete(annotationId, currentUser);
+      
+      toast({
+        variant: 'success',
+        title: 'Success',
+        description: 'Comment deleted successfully',
+      });
     } catch (err) {
       console.error('Failed to delete annotation:', err);
       
@@ -176,9 +246,13 @@ export const PdfViewerPage = () => {
       
       // Show error to user
       const errorMessage = err instanceof Error ? err.message : 'Failed to delete annotation. Please try again.';
-      alert(errorMessage);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: errorMessage,
+      });
     }
-  }, [annotations, currentUser]);
+  }, [annotations, currentUser, toast]);
 
   const handleVisibilityChange = useCallback((newIsPrivate: boolean, newVisibility: Role[]) => {
     setIsPrivate(newIsPrivate);
@@ -203,42 +277,57 @@ export const PdfViewerPage = () => {
         canAnnotate={canAnnotate}
       />
 
-      <div className={styles.controls}>
-        <button
+      <div className="flex items-center justify-center gap-4 mb-6 p-4 bg-card rounded-lg shadow-sm border">
+        <Button
           onClick={() => setPageNumber((prev) => prev - 1)}
           disabled={pageNumber <= 1}
-          className={styles.button}
+          variant="outline"
+          size="sm"
         >
+          <ChevronLeft className="h-4 w-4 mr-1" />
           Previous
-        </button>
-        <span className={styles.pageInfo}>
+        </Button>
+        <span className="text-sm font-medium px-4">
           Page {pageNumber} of {numPages}
         </span>
-        <button
+        <Button
           onClick={() => setPageNumber((prev) => prev + 1)}
           disabled={pageNumber >= numPages}
-          className={styles.button}
+          variant="outline"
+          size="sm"
         >
           Next
-        </button>
+          <ChevronRight className="h-4 w-4 ml-1" />
+        </Button>
         {canAnnotate && (
-          <button
-            className={styles.button}
-            onClick={() => setShowVisibilitySelector(!showVisibilitySelector)}
-          >
-            {showVisibilitySelector ? 'Hide' : 'Show'} Visibility Settings
-          </button>
+          <Dialog open={showVisibilitySelector} onOpenChange={setShowVisibilitySelector}>
+            <DialogTrigger asChild>
+              <Button
+                variant="secondary"
+                size="sm"
+                className="ml-4"
+              >
+                <Settings className="h-4 w-4 mr-2" />
+                Visibility Settings
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[500px]">
+              <DialogHeader>
+                <DialogTitle>Annotation Visibility Settings</DialogTitle>
+                <DialogDescription>
+                  Configure who can see your annotations. Changes apply to new annotations only.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="py-4">
+                <VisibilitySelector
+                  onVisibilityChange={handleVisibilityChange}
+                  currentUser={currentUser}
+                />
+              </div>
+            </DialogContent>
+          </Dialog>
         )}
       </div>
-
-      {showVisibilitySelector && canAnnotate && (
-        <div className={styles.visibilityPanel}>
-          <VisibilitySelector
-            onVisibilityChange={handleVisibilityChange}
-            currentUser={currentUser}
-          />
-        </div>
-      )}
 
       <div className={styles.documentWrapper}>
         <div className={clsx(styles.pageContainer, {
@@ -265,6 +354,7 @@ export const PdfViewerPage = () => {
             currentColor={currentColor}
             currentUser={currentUser}
             onAnnotationCreate={handleAnnotationCreate}
+            onAnnotationUpdate={handleAnnotationUpdate}
             onAnnotationDelete={handleAnnotationDelete}
             canAnnotate={canAnnotate}
             pageWidth={pageWidth}
