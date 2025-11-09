@@ -31,8 +31,9 @@ const corsOptions = {
     }
     return callback(null, true);
   },
-  methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-  credentials: true // Important if you use cookies/sessions/authorization headers
+  methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-User-Role'],
+  credentials: true
 };
 
 app.use(cors(corsOptions));
