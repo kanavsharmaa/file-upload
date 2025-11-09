@@ -1,0 +1,1 @@
+export { PdfViewerPage } from './PdfViewerPage';

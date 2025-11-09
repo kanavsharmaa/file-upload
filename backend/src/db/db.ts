@@ -4,7 +4,6 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-// Get the MONGO_URI from environment variables
 const MONGO_URI = process.env.MONGO_URI;
 
 if (!MONGO_URI) {
@@ -15,17 +14,15 @@ export let gfs: GridFSBucket;
 
 const connectDB = async () => {
   try {
-    // 1. Use mongoose.connect() for the default connection
     const conn = await mongoose.connect(MONGO_URI);
-
-    // 2. Get the 'db' object from the default connection
     const db = conn.connection.db;
+    
     if (!db) throw new Error("Database connection not found.");
 
-    // 3. Initialize GridFS on that db object
     gfs = new mongoose.mongo.GridFSBucket(db, {
       bucketName: "uploads",
     });
+    
     console.log("MongoDB Connection & GridFS Initialized.");
   } catch (error: unknown) {
     if (error instanceof Error) {
