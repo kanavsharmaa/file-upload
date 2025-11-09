@@ -14,29 +14,17 @@ const app = express();
 const PORT = process.env.PORT || 4000;
 
 // --- CORS Configuration ---
-// Define the exact URLs of your client applications (frontend)
-const allowedOrigins = [
-  'http://localhost:5173', // Vite default dev server
-  'http://localhost:3000', // Alternative local dev port
-  'https://file-upload-i85r.vercel.app' // Your deployed frontend URL
-];
 
-const corsOptions = {
-  origin: (origin, callback) => {
-    // allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.indexOf(origin) === -1) {
-      const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
-      return callback(new Error(msg), false);
-    }
-    return callback(null, true);
-  },
-  methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-User-Role'],
-  credentials: true
-};
+// const corsOptions = {
+//   origin: '*', // Allow all origins
+//   methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
+//   allowedHeaders: ['Content-Type', 'Authorization', 'X-User-Role'],
+//   credentials: true
+// };
 
-app.use(cors(corsOptions));
+// app.use(cors(corsOptions));
+
+app.use(cors({ origin: "*" }));
 
 app.use(express.json());
 
