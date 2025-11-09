@@ -1,12 +1,16 @@
-import '@react-pdf-viewer/core/lib/styles/index.css';
+import { StrictMode } from 'react';
+import { createRoot } from 'react-dom/client';
+import '@styles/globals.css';
+import App from './App';
 
-import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
-import './index.css'
-import App from './App.tsx'
+const rootElement = document.getElementById('root');
 
-createRoot(document.getElementById('root')!).render(
+if (!rootElement) {
+  throw new Error('Failed to find the root element');
+}
+
+createRoot(rootElement).render(
   <StrictMode>
     <App />
-  </StrictMode>,
-)
+  </StrictMode>
+);

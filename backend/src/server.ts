@@ -1,6 +1,6 @@
 import express from "express";
 import dotenv from "dotenv";
-import fileRoutes from "./routes/fileRoutes"; // 2. Import our file routes
+import fileRoutes from "./routes/fileRoutes";
 import cors from "cors";
 import { connectDB } from "./db/db";
 

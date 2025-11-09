@@ -1,12 +1,4 @@
-import mongoose, { Schema, Document } from 'mongoose';
-
-// // Define an interface for our document (optional, but good TS practice)
-// export interface IFile extends Document {
-//     gridFsId: mongoose.Schema.Types.ObjectId;
-//     fileName: string;
-//     uploaderRole: string;
-//     uploadDate: Date;
-// }
+import mongoose, { Schema } from 'mongoose';
 
 const FileSchema = new Schema({
     gridFsId: { 
