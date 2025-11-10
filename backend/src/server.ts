@@ -13,18 +13,28 @@ connectDB();
 const app = express();
 const PORT = process.env.PORT || 4000;
 
-// --- CORS Configuration ---
+// --- CORS Configuration for Vercel ---
+app.use(cors({ 
+  origin: "*",
+  methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-User-Role'],
+  credentials: true
+}));
 
-// const corsOptions = {
-//   origin: '*', // Allow all origins
-//   methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
-//   allowedHeaders: ['Content-Type', 'Authorization', 'X-User-Role'],
-//   credentials: true
-// };
-
-// app.use(cors(corsOptions));
-
-app.use(cors({ origin: "*" }));
+// Manual CORS headers for Vercel serverless functions
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, HEAD, PUT, PATCH, POST, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-User-Role');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  
+  // Handle preflight requests
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+  
+  next();
+});
 
 app.use(express.json());
 
