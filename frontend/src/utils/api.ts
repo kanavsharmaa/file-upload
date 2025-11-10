@@ -37,6 +37,7 @@ export const apiFetch = async <T = unknown>(
   // 2. Set up our headers
   const headers = new Headers(options.headers);
   headers.set('X-User-Role', role); // Add our auth header
+  headers.set('Acess-Control-Allow-Origin', '*');
   
   // For POST requests with FormData, we let 'fetch' set Content-Type.
   // For JSON, we set it ourselves.

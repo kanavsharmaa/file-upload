@@ -1,14 +1,13 @@
 import { Router } from "express";
-import { upload } from "../middlewares/upload";
+import { upload } from "../middlewares/upload.js";
 import {
   uploadFile,
   uploadMultipleFiles,
   getAllFiles,
   getFileById,
   deleteFile,
-} from "../controllers/fileController";
-
-import { isAdmin, isUser } from "../middlewares/auth";
+} from "../controllers/fileController.js";
+import { isAdmin, isUser } from "../middlewares/auth.js";
 
 const router = Router();
 

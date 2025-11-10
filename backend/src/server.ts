@@ -1,10 +1,10 @@
 // @ts-nocheck
 import express from "express";
 import dotenv from "dotenv";
-import fileRoutes from "./routes/fileRoutes";
-import annotationRoutes from "./routes/annotationRoutes";
+import fileRoutes from "./routes/fileRoutes.js";
+import annotationRoutes from "./routes/annotationRoutes.js";
 import cors from "cors";
-import { connectDB } from "./db/db";
+import { connectDB } from "./db/db.js";
 
 dotenv.config();
 

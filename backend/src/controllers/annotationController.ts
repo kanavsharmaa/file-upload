@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import Annotation from '../models/Annotation';
+import Annotation from '../models/Annotation.js';
 import mongoose from 'mongoose';
 
 export const createAnnotation = async (req: Request, res: Response) => {

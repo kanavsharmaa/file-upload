@@ -4,8 +4,8 @@ import {
     getAnnotationsByDocument,
     updateAnnotation,
     deleteAnnotation
-} from '../controllers/annotationController';
-import { isUser, canAnnotate } from '../middlewares/auth';
+} from '../controllers/annotationController.js';
+import { isUser, canAnnotate } from '../middlewares/auth.js';
 
 const router = Router();
 
